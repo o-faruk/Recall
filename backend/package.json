@@ -1,0 +1,12 @@
+{
+  "name": "recall-backend",
+  "version": "1.0.0",
+  "description": "Recall backend — AWS Lambda functions (upload, process, query)",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "functions/upload",
+    "functions/process",
+    "functions/query"
+  ]
+}

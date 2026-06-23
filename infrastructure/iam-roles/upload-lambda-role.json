@@ -1,0 +1,18 @@
+{
+  "_comment": "Least-privilege IAM policy for the Recall UPLOAD Lambda. Attach this as an inline/customer-managed policy to the upload Lambda's execution role (alongside the AWS-managed AWSLambdaBasicExecutionRole, which only grants CloudWatch Logs). Replace ACCOUNT_ID, the bucket name, and the table name with your real values.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PutRawDocumentsToS3",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::recall-documents-omar-2026/raw/*"
+    },
+    {
+      "Sid": "WriteDocumentMetadata",
+      "Effect": "Allow",
+      "Action": "dynamodb:PutItem",
+      "Resource": "arn:aws:dynamodb:us-east-1:ACCOUNT_ID:table/RecallDocuments"
+    }
+  ]
+}

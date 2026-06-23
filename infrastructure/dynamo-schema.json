@@ -1,0 +1,14 @@
+{
+  "_comment": "Recall DynamoDB table definition. Create via console (recommended for Phase 1) or with: aws dynamodb create-table --cli-input-json file://infrastructure/dynamo-schema.json. Only the key attribute (documentId) is declared here — DynamoDB is schemaless for non-key attributes, so filename/status/etc. are written by the Lambda without being predefined. BillingMode PAY_PER_REQUEST (on-demand) keeps you in the free tier with zero idle cost.",
+  "TableName": "RecallDocuments",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    { "AttributeName": "documentId", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "documentId", "KeyType": "HASH" }
+  ],
+  "Tags": [
+    { "Key": "project", "Value": "recall" }
+  ]
+}

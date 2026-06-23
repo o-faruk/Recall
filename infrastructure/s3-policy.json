@@ -1,0 +1,19 @@
+{
+  "_comment": "Recall S3 bucket policy. This DENIES any request that is not made over HTTPS (TLS) and documents that the bucket is private. Public access should ALSO be blocked via the bucket's 'Block Public Access' setting (all four boxes ON) — that is the primary control; this policy is defense-in-depth. Replace the bucket name with yours.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyInsecureTransport",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::recall-documents-omar-2026",
+        "arn:aws:s3:::recall-documents-omar-2026/*"
+      ],
+      "Condition": {
+        "Bool": { "aws:SecureTransport": "false" }
+      }
+    }
+  ]
+}

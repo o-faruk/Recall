@@ -1,0 +1,57 @@
+# ----------------------------------------------------------------------
+# Recall .gitignore
+# ----------------------------------------------------------------------
+
+# Dependencies (all levels: root, frontend/, backend/, each function/)
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# Environment variables & secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+*.local
+
+# AWS credentials & config (in case anything lands in-repo by accident)
+.aws/
+aws-exports.js
+credentials
+config
+*.pem
+
+# Build / output folders
+dist/
+out/
+build/
+.vite/
+frontend/dist/
+
+# Lambda deployment artifacts
+*.zip
+backend/**/*.zip
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+.cache/
+coverage/
