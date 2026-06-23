@@ -120,14 +120,8 @@ You do **not** predefine `filename`, `status`, etc. DynamoDB only needs the key 
 ### 6a. First, create its execution role (Section 7) — then come back here.
 Do **Section 7** now, then return. A Lambda must have a role at creation time.
 
-### 6b. Build the deployment zip (on your Mac)
-The Lambda needs its `node_modules` bundled.
-
-```bash
-cd backend/functions/upload
-npm install
-npm run zip          # produces function.zip (index.js + node_modules)
-```
+### 6b. Good news — no zip needed for Phase 1
+The Node.js 20.x Lambda runtime already ships with the AWS SDK v3 (`@aws-sdk/*`), which is the only thing this function imports. So you can paste the code straight into the console's built-in editor — no terminal, no `npm install`, no zip. (You'll only need the zip path later, in Phase 2, when `process` uses a library the runtime doesn't include, like `pdf-parse`.)
 
 ### 6c. Create the function
 1. Console → **Lambda** → **Create function** → **Author from scratch**.
@@ -137,8 +131,13 @@ npm run zip          # produces function.zip (index.js + node_modules)
 5. **Permissions** → **Change default execution role** → **Use an existing role** → pick **`recall-upload-role`** (created in Section 7).
 6. Create function.
 
-### 6d. Upload your code
-- In the function page → **Code** tab → **Upload from** → **.zip file** → choose `function.zip` → Save.
+### 6d. Add your code (inline — the easy way)
+1. On the function page → **Code** tab. There's a file tree on the left with **`index.mjs`** open in the editor.
+2. Select all the placeholder code in it, delete it, then open `backend/functions/upload/index.js` from this repo, copy the whole file, and paste it in.
+   - ⚠️ The file must be named **`index.mjs`** (the `.mjs` extension is what lets Lambda run the `import`/`export` syntax this code uses). If the editor shows `index.js`, right-click it → Rename → `index.mjs`. Leave the handler set to `index.handler`.
+3. Click the orange **Deploy** button to save. You should see "Changes deployed."
+
+> Alternative (not needed now): upload a zip via **Upload from → .zip file**, built with `cd backend/functions/upload && npm install && npm run zip`.
 
 ### 6e. Set environment variables
 - **Configuration** tab → **Environment variables** → **Edit** → add:

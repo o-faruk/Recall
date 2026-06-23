@@ -1,1 +1,18 @@
-{ "_comment": "Filled in Phase 2 — S3 GetObject + DynamoDB UpdateItem (+ outbound Pinecone/embeddings)." }
+{
+  "_comment": "Least-privilege IAM policy for the Recall PROCESS Lambda. Attach as a customer-managed policy to recall-process-role (alongside AWS-managed AWSLambdaBasicExecutionRole for CloudWatch Logs). It can READ raw objects and UPDATE existing metadata rows — nothing more. No s3:PutObject (so it can never re-trigger itself) and no dynamodb:PutItem/DeleteItem. The embedding model + Pinecone are external HTTPS APIs (not AWS), so they need API keys in env vars, NOT IAM permissions. Replace ACCOUNT_ID, bucket, and table names with your values.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadRawDocumentsFromS3",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::recall-documents-omar-2026/raw/*"
+    },
+    {
+      "Sid": "UpdateDocumentMetadata",
+      "Effect": "Allow",
+      "Action": "dynamodb:UpdateItem",
+      "Resource": "arn:aws:dynamodb:us-east-1:ACCOUNT_ID:table/RecallDocuments"
+    }
+  ]
+}

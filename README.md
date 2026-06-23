@@ -65,8 +65,8 @@ A more detailed write-up lives in [`architecture.md`](./architecture.md).
 Built in phases. Mock responses are used for embeddings, Pinecone, and Claude during early phases so the upload/storage flow can be tested for **$0**.
 
 - [x] Git setup
-- [ ] **Phase 1** — AWS setup & storage (IAM, S3, DynamoDB, upload Lambda) ← *in progress*
-- [ ] Phase 2 — Processing pipeline (extract → chunk → embed → Pinecone)
+- [x] Phase 1 — AWS setup & storage (IAM, S3, DynamoDB, upload Lambda)
+- [x] **Phase 2** — Processing pipeline (S3 trigger → extract → chunk → mock embed → mock Pinecone) ← *testing*
 - [ ] Phase 3 — RAG query (embed → search → Claude → answer + citations)
 - [ ] Phase 4 — React frontend
 - [ ] Phase 5 — Polish & deployment
@@ -86,7 +86,10 @@ Built in phases. Mock responses are used for embeddings, Pinecone, and Claude du
 ### Phase 1 — AWS Setup & Storage
 _See [`docs/phase1-aws-setup.md`](./docs/phase1-aws-setup.md) for the full step-by-step AWS console walkthrough._
 
-### Phases 2–5
+### Phase 2 — Processing Pipeline
+_See [`docs/phase2-processing.md`](./docs/phase2-processing.md) — S3 trigger, zip deploy, and the extract → chunk → embed pipeline (embeddings + Pinecone mocked)._
+
+### Phases 3–5
 _Coming soon._
 
 ---

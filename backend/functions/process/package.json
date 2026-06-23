@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "description": "Recall process Lambda (built in a later phase)",
-  "dependencies": {}
+  "description": "Recall process Lambda — S3 trigger -> extract -> chunk -> embed -> Pinecone",
+  "scripts": {
+    "zip": "rm -f function.zip && zip -r function.zip index.js lib package.json node_modules"
+  },
+  "dependencies": {
+    "pdf-parse": "^1.1.1"
+  },
+  "_note": "The @aws-sdk/* packages are NOT listed here on purpose — the Node.js 20.x Lambda runtime already provides them, so bundling them would just bloat the zip. Only pdf-parse needs to ship in the deployment package."
 }

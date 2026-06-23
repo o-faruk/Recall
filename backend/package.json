@@ -1,12 +1,7 @@
 {
   "name": "recall-backend",
   "version": "1.0.0",
-  "description": "Recall backend — AWS Lambda functions (upload, process, query)",
+  "description": "Recall backend — AWS Lambda functions (upload, process, query). Each function in functions/* is deployed independently as its own zip, so each keeps its OWN node_modules (no npm workspaces — workspaces hoist deps to the root and break per-function zips).",
   "private": true,
-  "type": "module",
-  "workspaces": [
-    "functions/upload",
-    "functions/process",
-    "functions/query"
-  ]
+  "type": "module"
 }
