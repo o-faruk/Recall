@@ -1,119 +1,93 @@
-// ======================================================================
-// Recall DELETE Lambda — removes a document from the system
-// DELETE /documents/{documentId}
-// ======================================================================
-// Deletes:
-//   1. DynamoDB record (RecallDocuments table)
-//   2. S3 raw file (raw/{documentId}.pdf)
-//   3. Pinecone vectors (metadata: {"doc_id": documentId})
-// ======================================================================
+// ----------------------------------------------------------------------
+// Recall — delete Lambda
+// Trigger: API Gateway  DELETE /documents/{documentId}
+// Removes a document everywhere:
+//   1. Pinecone vectors  (by ID: "<documentId>#0..<chunkCount-1>")
+//   2. S3 raw file        (raw/<documentId>.<ext>)
+//   3. DynamoDB record
+// IAM: s3:DeleteObject + dynamodb:GetItem + dynamodb:DeleteItem on the table.
+//
+// No npm dependencies — AWS SDK is in the runtime; Pinecone via fetch().
+// Vectors are deleted BY ID (not metadata filter) because filter-deletes are
+// not supported on Pinecone serverless/free indexes.
+// ----------------------------------------------------------------------
 
-import { DynamoDBDocumentClient, GetItem, DeleteItem } from "@aws-sdk/lib-dynamodb";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { Pinecone } from "@pinecone-database/pinecone";
 
-const dynamoDBClient = new DynamoDBClient({ region: "us-east-1" });
-const ddb = DynamoDBDocumentClient.from(dynamoDBClient);
+const REGION = process.env.AWS_REGION || "us-east-1";
+const TABLE = process.env.DYNAMO_TABLE_NAME || "RecallDocuments";
+const PINECONE_KEY = process.env.PINECONE_API_KEY;
+const PINECONE_INDEX = process.env.PINECONE_INDEX_NAME || process.env.PINECONE_INDEX || "recall";
+const API_VERSION = "2025-01";
 
-const s3 = new S3Client({ region: "us-east-1" });
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }));
+const s3 = new S3Client({ region: REGION });
 
-const dynamoTableName = process.env.DYNAMO_TABLE_NAME || "RecallDocuments";
-const s3BucketName = process.env.S3_BUCKET_NAME || "recall-documents";
-const pineconeApiKey = process.env.PINECONE_API_KEY;
-const pineconeIndexName = process.env.PINECONE_INDEX_NAME || "recall";
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "OPTIONS,DELETE",
+  "Content-Type": "application/json",
+};
+const reply = (statusCode, body) => ({ statusCode, headers: CORS, body: JSON.stringify(body) });
 
-let pc = null;
+// Resolve the Pinecone data-plane host (prefer env, else ask the control API).
+async function pineconeHost() {
+  if (process.env.PINECONE_HOST) return process.env.PINECONE_HOST.replace(/^https?:\/\//, "");
+  const res = await fetch(`https://api.pinecone.io/indexes/${PINECONE_INDEX}`, {
+    headers: { "Api-Key": PINECONE_KEY, "X-Pinecone-API-Version": API_VERSION },
+  });
+  if (!res.ok) throw new Error(`Pinecone describe-index ${res.status}: ${await res.text()}`);
+  return (await res.json()).host;
+}
 
-async function initPinecone() {
-  if (!pineconeApiKey) return null;
-  if (pc) return pc;
-  pc = new Pinecone({ apiKey: pineconeApiKey });
-  return pc;
+async function deletePineconeVectors(documentId, chunkCount) {
+  if (!PINECONE_KEY || !chunkCount) return;
+  const ids = Array.from({ length: chunkCount }, (_, i) => `${documentId}#${i}`);
+  const host = await pineconeHost();
+  const res = await fetch(`https://${host}/vectors/delete`, {
+    method: "POST",
+    headers: { "Api-Key": PINECONE_KEY, "Content-Type": "application/json", "X-Pinecone-API-Version": API_VERSION },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error(`Pinecone delete ${res.status}: ${await res.text()}`);
 }
 
 export const handler = async (event) => {
-  console.log("DELETE /documents/{documentId}", JSON.stringify(event));
+  const method = event.requestContext?.http?.method || event.httpMethod;
+  if (method === "OPTIONS") return reply(200, { ok: true });
+
+  const documentId = event.pathParameters?.documentId;
+  if (!documentId) return reply(400, { error: "Missing documentId in path." });
 
   try {
-    // Extract documentId from the path
-    const documentId =
-      event.pathParameters?.documentId || event.requestContext?.resourceId;
-    if (!documentId)
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Missing documentId in path" }),
-        headers: { "Access-Control-Allow-Origin": "*" },
-      };
+    // 1. fetch the record (need s3Key + chunkCount; also confirms it exists)
+    const { Item } = await ddb.send(new GetCommand({ TableName: TABLE, Key: { documentId } }));
+    if (!Item) return reply(404, { error: "Document not found." });
 
-    // 1. Get the document from DynamoDB to verify it exists
-    const getResult = await ddb.send(
-      new GetItem({
-        TableName: dynamoTableName,
-        Key: { documentId },
-      })
-    );
-
-    if (!getResult.Item) {
-      return {
-        statusCode: 404,
-        body: JSON.stringify({ error: "Document not found" }),
-        headers: { "Access-Control-Allow-Origin": "*" },
-      };
+    // 2. Pinecone vectors (best-effort — don't block the rest if it errors)
+    try {
+      await deletePineconeVectors(documentId, Item.chunkCount || 0);
+    } catch (e) {
+      console.error("Pinecone delete error:", e);
     }
 
-    // 2. Delete from S3
+    // 3. S3 raw file (use stored s3Key; fall back to raw/<id>.pdf)
+    const s3Key = Item.s3Key || `raw/${documentId}.pdf`;
     try {
-      await s3.send(
-        new DeleteObjectCommand({
-          Bucket: s3BucketName,
-          Key: `raw/${documentId}.pdf`,
-        })
-      );
-      console.log(`Deleted S3 object: raw/${documentId}.pdf`);
+      await s3.send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET_NAME, Key: s3Key }));
     } catch (e) {
       console.error("S3 delete error:", e);
-      // don't fail if S3 delete fails; continue
     }
 
-    // 3. Delete from Pinecone (by filtering metadata)
-    if (pineconeApiKey) {
-      try {
-        const pc = await initPinecone();
-        const index = pc.Index(pineconeIndexName);
-        // Delete all vectors with metadata doc_id == documentId
-        await index.deleteMany({
-          filter: { doc_id: { $eq: documentId } },
-        });
-        console.log(`Deleted Pinecone vectors for doc ${documentId}`);
-      } catch (e) {
-        console.error("Pinecone delete error:", e);
-        // don't fail if Pinecone delete fails; continue
-      }
-    }
+    // 4. DynamoDB record (the source of truth — do this last)
+    await ddb.send(new DeleteCommand({ TableName: TABLE, Key: { documentId } }));
 
-    // 4. Delete from DynamoDB
-    await ddb.send(
-      new DeleteItem({
-        TableName: dynamoTableName,
-        Key: { documentId },
-      })
-    );
-    console.log(`Deleted DynamoDB record: ${documentId}`);
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ message: "Document deleted successfully" }),
-      headers: { "Access-Control-Allow-Origin": "*" },
-    };
+    return reply(200, { message: "Document deleted successfully", documentId });
   } catch (err) {
-    console.error("Error deleting document:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        error: err.message || "Failed to delete document",
-      }),
-      headers: { "Access-Control-Allow-Origin": "*" },
-    };
+    console.error("delete Lambda error:", err);
+    return reply(500, { error: err.message || "Failed to delete document." });
   }
 };

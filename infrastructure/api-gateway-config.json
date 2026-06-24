@@ -27,6 +27,12 @@
       "purpose": "One document's status/metadata for polling"
     },
     {
+      "method": "DELETE",
+      "path": "/documents/{documentId}",
+      "lambda": "recall-delete",
+      "purpose": "Remove a document: Pinecone vectors + S3 file + DynamoDB record. NOTE: enable CORS on this resource WITH the DELETE method checked, then redeploy — browsers send an OPTIONS preflight that must allow DELETE."
+    },
+    {
       "method": "POST",
       "path": "/query",
       "lambda": "recall-query",

@@ -3,14 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "description": "Recall delete Lambda — DELETE /documents/{id} removes DynamoDB + S3 + Pinecone",
+  "description": "Recall delete Lambda — DELETE /documents/{id}: removes Pinecone vectors, S3 file, DynamoDB record",
   "scripts": {
-    "zip": "rm -f function.zip && zip -r function.zip index.js package.json node_modules/"
+    "zip": "rm -f function.zip && zip -r function.zip index.js package.json"
   },
-  "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.600.0",
-    "@aws-sdk/client-s3": "^3.600.0",
-    "@aws-sdk/lib-dynamodb": "^3.600.0",
-    "@pinecone-database/pinecone": "^3.0.0"
-  }
+  "dependencies": {},
+  "_note": "No dependencies now — AWS SDK comes from the runtime and Pinecone is called via fetch(). The old @pinecone-database/pinecone dependency is gone, so this can be pasted inline OR shipped as a tiny zip with NO node_modules."
 }
