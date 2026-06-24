@@ -1,1 +1,12 @@
-{ "_comment": "Filled in Phase 3 — DynamoDB GetItem/Query (+ outbound Pinecone/Claude)." }
+{
+  "_comment": "IAM for the Recall QUERY Lambda. Notably it needs NO access to S3 or DynamoDB: everything it returns (answer + citations) is built from Pinecone search-result metadata (documentId, filename, chunkIndex, text) plus the external Gemini/Pinecone/Anthropic APIs. Those external services authenticate with API KEYS stored in the Lambda's environment variables, NOT with IAM. So the query role only needs CloudWatch Logs — attach the AWS-managed 'AWSLambdaBasicExecutionRole' and nothing else. This empty-resource custom policy below documents that intent (logs are already covered by the managed policy).",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "WriteOwnLogsOnly",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:us-east-1:ACCOUNT_ID:log-group:/aws/lambda/recall-query:*"
+    }
+  ]
+}

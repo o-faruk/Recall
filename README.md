@@ -66,9 +66,9 @@ Built in phases. Mock responses are used for embeddings, Pinecone, and Claude du
 
 - [x] Git setup
 - [x] Phase 1 — AWS setup & storage (IAM, S3, DynamoDB, upload Lambda)
-- [x] **Phase 2** — Processing pipeline (S3 trigger → extract → chunk → mock embed → mock Pinecone) ← *testing*
-- [ ] Phase 3 — RAG query (embed → search → Claude → answer + citations)
-- [ ] Phase 4 — React frontend
+- [x] Phase 2 — Processing pipeline (S3 trigger → extract → chunk → mock embed → mock Pinecone)
+- [x] Phase 3 — RAG query (Gemini embed → Pinecone search → Claude Haiku → answer + citations)
+- [x] **Phase 4** — React frontend (dark UI, demo mode + live mode) ← *local testing*
 - [ ] Phase 5 — Polish & deployment
 
 ---
@@ -89,7 +89,13 @@ _See [`docs/phase1-aws-setup.md`](./docs/phase1-aws-setup.md) for the full step-
 ### Phase 2 — Processing Pipeline
 _See [`docs/phase2-processing.md`](./docs/phase2-processing.md) — S3 trigger, zip deploy, and the extract → chunk → embed pipeline (embeddings + Pinecone mocked)._
 
-### Phases 3–5
+### Phase 3 — RAG Query
+_See [`docs/phase3-rag-query.md`](./docs/phase3-rag-query.md) — Gemini embeddings + Pinecone search + Claude (Haiku) answer with citations. First phase with a paid call (Claude only)._
+
+### Phase 4 — React Frontend
+_See [`docs/phase4-frontend.md`](./docs/phase4-frontend.md). Run `cd frontend && npm install && npm run dev` — demo mode works with no backend ($0)._
+
+### Phase 5 — Polish & Deployment
 _Coming soon._
 
 ---

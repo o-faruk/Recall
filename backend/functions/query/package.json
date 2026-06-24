@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "main": "index.js",
-  "description": "Recall query Lambda (built in a later phase)",
-  "dependencies": {}
+  "description": "Recall query Lambda — embed question -> Pinecone search -> Claude -> answer + citations",
+  "scripts": {
+    "zip": "rm -f function.zip && zip -r function.zip index.js lib package.json"
+  },
+  "dependencies": {},
+  "_note": "Zero npm dependencies on purpose — Gemini, Pinecone, and Anthropic are all called with the runtime's built-in fetch(). The zip has NO node_modules, so it's tiny and avoids the bundling issues from Phase 2."
 }
