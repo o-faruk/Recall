@@ -1,0 +1,12 @@
+{
+  "name": "recall-documents-lambda",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "description": "Recall documents read Lambda — GET /documents (list) + GET /documents/{id} (status)",
+  "scripts": {
+    "zip": "rm -f function.zip && zip -r function.zip index.js package.json"
+  },
+  "dependencies": {},
+  "_note": "No dependencies — @aws-sdk/* is provided by the Node 20 runtime. You can paste index.js inline OR upload this tiny zip."
+}

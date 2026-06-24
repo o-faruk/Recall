@@ -42,6 +42,16 @@ export default function App() {
     }
   }, []);
 
+  const handleDelete = useCallback(async (documentId) => {
+    try {
+      await api.deleteDocument(documentId);
+      setDocuments((prev) => prev.filter((d) => d.documentId !== documentId));
+      if (selectedDocId === documentId) setSelectedDocId(null);
+    } catch (e) {
+      setError(`Delete failed: ${e.message}`);
+    }
+  }, [selectedDocId]);
+
   const handleSend = useCallback(
     async (question) => {
       setMessages((m) => [...m, { role: "user", text: question }]);
@@ -89,6 +99,7 @@ export default function App() {
             documents={documents}
             selectedDocId={selectedDocId}
             onSelect={(id) => setSelectedDocId((cur) => (cur === id ? null : id))}
+            onDelete={handleDelete}
           />
         </aside>
 

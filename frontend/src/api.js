@@ -55,6 +55,10 @@ const mockApi = {
   async listDocuments() {
     return [...mockDocs.values()].map((d) => ({ ...d, ...mockStatus(d) }));
   },
+  async deleteDocument(documentId) {
+    await sleep(200);
+    mockDocs.delete(documentId);
+  },
   async askQuestion(question, documentIds) {
     await sleep(900);
     const scope = documentIds?.length ? "the selected document" : "your documents";
@@ -108,6 +112,7 @@ const liveApi = {
   // we add alongside API Gateway in Phase 5 (a DynamoDB scan + get).
   getDocument: (id) => http("GET", `/documents/${id}`),
   listDocuments: () => http("GET", "/documents"),
+  deleteDocument: (id) => http("DELETE", `/documents/${id}`),
   askQuestion: (question, documentIds) =>
     http("POST", "/query", documentIds?.length ? { question, documentIds } : { question }),
 };

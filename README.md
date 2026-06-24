@@ -49,12 +49,12 @@ A more detailed write-up lives in [`architecture.md`](./architecture.md).
 |--------------------|-------------------------------------|-------|
 | Frontend           | React + Vite                        | Dark UI, drag-and-drop upload, chat + citation cards |
 | API Layer          | AWS API Gateway (REST)              | Routes HTTPS requests to Lambdas |
-| Compute            | AWS Lambda (Node.js 20.x)           | Three functions: `upload`, `process`, `query` |
+| Compute            | AWS Lambda (Node.js 20.x)           | Four functions: `upload`, `process`, `query`, `documents` |
 | Document Storage   | AWS S3                              | Raw uploaded files; versioned, public access blocked |
 | Metadata Database  | AWS DynamoDB                        | Per-document status, filename, chunk count, etc. |
 | Vector Database    | Pinecone (free tier)               | Stores chunk embeddings for similarity search |
-| Embeddings         | Free/cheap embedding model          | Mocked in Phases 1–2, swappable later |
-| LLM                | Anthropic Claude API (`claude-opus-4-8`) | Generates grounded answers + citations |
+| Embeddings         | Google Gemini (free tier)           | Mocked in Phases 1–2, real from Phase 3; swappable adapter |
+| LLM                | Anthropic Claude API (`claude-haiku-4-5`) | Generates grounded answers + citations (model set via env var) |
 | Auth / Security    | IAM (least-privilege per-Lambda roles) | No "god role" — each Lambda gets only what it needs |
 | Version Control    | Git + GitHub                        | `main` branch protected |
 
@@ -68,35 +68,61 @@ Built in phases. Mock responses are used for embeddings, Pinecone, and Claude du
 - [x] Phase 1 — AWS setup & storage (IAM, S3, DynamoDB, upload Lambda)
 - [x] Phase 2 — Processing pipeline (S3 trigger → extract → chunk → mock embed → mock Pinecone)
 - [x] Phase 3 — RAG query (Gemini embed → Pinecone search → Claude Haiku → answer + citations)
-- [x] **Phase 4** — React frontend (dark UI, demo mode + live mode) ← *local testing*
-- [ ] Phase 5 — Polish & deployment
+- [x] Phase 4 — React frontend (dark UI, demo mode + live mode)
+- [x] **Phase 5** — Polish & deployment (API Gateway + CORS, read endpoints, IAM audit)
 
 ---
 
-## Setup
+## Demo
 
-> Setup instructions are filled in phase by phase as the project is built.
+<!-- TODO: replace with a real screen-recording GIF of upload → processing → question → cited answer -->
+![Recall demo](docs/demo.gif)
+
+_(Demo GIF placeholder — record a short clip of uploading a PDF, watching it turn Ready, and asking a question with citations.)_
+
+---
+
+## Quick start (try the UI in 30 seconds, no AWS needed)
+
+```bash
+cd frontend
+npm install
+npm run dev          # opens http://localhost:5173 in DEMO mode ($0, fully simulated)
+```
+
+## Full deploy (from scratch)
+
+Each phase has a complete, click-by-click guide in [`docs/`](./docs). Run them in order:
+
+1. **[Phase 1 — AWS setup & storage](./docs/phase1-aws-setup.md):** account + MFA, billing alerts, IAM user, S3, DynamoDB, the `upload` Lambda.
+2. **[Phase 2 — Processing pipeline](./docs/phase2-processing.md):** the `process` Lambda, the S3 trigger, extract → chunk → embed.
+3. **[Phase 3 — RAG query](./docs/phase3-rag-query.md):** Pinecone + Gemini + Anthropic keys, the `query` Lambda, go live.
+4. **[Phase 4 — React frontend](./docs/phase4-frontend.md):** run the dark UI locally (demo or live).
+5. **[Phase 5 — Polish & deployment](./docs/phase5-polish-deploy.md):** API Gateway + CORS, the `documents` read Lambda, IAM audit, flip the frontend to live.
 
 ### Prerequisites
 - Node.js 20.x and npm
-- An AWS account (free tier)
-- A GitHub account
-- (Later) Pinecone free-tier account, Anthropic API key
+- AWS account (free tier), GitHub account
+- Pinecone free-tier account, Google Gemini API key, Anthropic API key
 
-### Phase 1 — AWS Setup & Storage
-_See [`docs/phase1-aws-setup.md`](./docs/phase1-aws-setup.md) for the full step-by-step AWS console walkthrough._
+### Environment variables
+- Backend: each Lambda's env vars are documented in [`.env.example`](./.env.example).
+- Frontend: see [`frontend/.env.example`](./frontend/.env.example) — `VITE_USE_MOCK` and `VITE_API_BASE_URL`.
+- **Never commit real keys.** `.gitignore` already excludes `.env*` (except the examples).
 
-### Phase 2 — Processing Pipeline
-_See [`docs/phase2-processing.md`](./docs/phase2-processing.md) — S3 trigger, zip deploy, and the extract → chunk → embed pipeline (embeddings + Pinecone mocked)._
+---
 
-### Phase 3 — RAG Query
-_See [`docs/phase3-rag-query.md`](./docs/phase3-rag-query.md) — Gemini embeddings + Pinecone search + Claude (Haiku) answer with citations. First phase with a paid call (Claude only)._
+## Git commit checklist (one per phase)
 
-### Phase 4 — React Frontend
-_See [`docs/phase4-frontend.md`](./docs/phase4-frontend.md). Run `cd frontend && npm install && npm run dev` — demo mode works with no backend ($0)._
+```bash
+git add . && git commit -m "Phase N: <summary>" && git push   # then open a PR if using branch protection
+```
 
-### Phase 5 — Polish & Deployment
-_Coming soon._
+- [x] `Initial commit: Git scaffolding + Phase 1`
+- [x] `Phase 2: processing pipeline (S3 trigger, pdf-parse, chunking, mock embed/Pinecone)`
+- [x] `Phase 3: RAG query (Gemini embeddings, Pinecone, Claude Haiku)`
+- [x] `Phase 4: React frontend (dark UI, demo + live modes)`
+- [ ] `Phase 5: API Gateway + read endpoints + IAM audit + README`
 
 ---
 
@@ -107,11 +133,12 @@ Recall/
 ├── frontend/          # React (Vite) app
 ├── backend/
 │   └── functions/
-│       ├── upload/    # API Gateway POST → S3 + DynamoDB
-│       ├── process/   # S3 trigger → extract → chunk → embed → Pinecone
-│       └── query/     # question → embed → search → Claude → answer
-├── infrastructure/    # IAM policies, S3 policy, DynamoDB schema, API config
-└── docs/              # Per-phase setup guides
+│       ├── upload/     # POST /documents → S3 + DynamoDB
+│       ├── process/    # S3 trigger → extract → chunk → embed → Pinecone
+│       ├── query/      # POST /query → embed → search → Claude → answer
+│       └── documents/  # GET /documents (+ /{id}) → list + status
+├── infrastructure/    # IAM policies, S3 policy, DynamoDB schema, API Gateway config
+└── docs/              # Per-phase setup guides (phase1–5)
 ```
 
 ---

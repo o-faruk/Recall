@@ -1,0 +1,18 @@
+{
+  "_comment": "Least-privilege IAM policy for the Recall DELETE Lambda. Attach to recall-delete-role alongside AWS-managed AWSLambdaBasicExecutionRole (logs). It can DELETE from the table, DELETE from S3, and (optionally) DELETE from Pinecone — nothing else. Replace ACCOUNT_ID and resource names with your values.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DeleteDocumentFromDynamoDB",
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:DeleteItem"],
+      "Resource": "arn:aws:dynamodb:us-east-1:ACCOUNT_ID:table/RecallDocuments"
+    },
+    {
+      "Sid": "DeleteRawFileFromS3",
+      "Effect": "Allow",
+      "Action": ["s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::recall-documents/raw/*"
+    }
+  ]
+}

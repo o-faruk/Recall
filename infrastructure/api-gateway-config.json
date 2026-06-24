@@ -1,1 +1,40 @@
-{ "_comment": "Filled in Phase 5 — API Gateway REST route definitions + CORS." }
+{
+  "_comment": "Reference map of Recall's API Gateway (REST) routes -> Lambdas. This documents the wiring you build in the console (docs/phase5-polish-deploy.md). All routes use Lambda PROXY integration, so each Lambda receives the raw event and returns its own statusCode/headers/body (including the CORS headers). Enable CORS on each resource (adds the OPTIONS method). Deploy to the 'prod' stage; the invoke URL becomes VITE_API_BASE_URL.",
+  "api": {
+    "name": "recall-api",
+    "type": "REST",
+    "stage": "prod",
+    "integration": "AWS_PROXY (Lambda proxy)",
+    "cors": "enabled on every resource (OPTIONS) + CORS headers returned by each Lambda"
+  },
+  "routes": [
+    {
+      "method": "POST",
+      "path": "/documents",
+      "lambda": "recall-upload",
+      "purpose": "Upload a file -> S3 + DynamoDB; returns { documentId }"
+    },
+    {
+      "method": "GET",
+      "path": "/documents",
+      "lambda": "recall-documents",
+      "purpose": "List all documents (DynamoDB Scan) for the sidebar"
+    },
+    {
+      "method": "GET",
+      "path": "/documents/{documentId}",
+      "lambda": "recall-documents",
+      "purpose": "One document's status/metadata for polling"
+    },
+    {
+      "method": "POST",
+      "path": "/query",
+      "lambda": "recall-query",
+      "purpose": "Ask a question -> embed -> Pinecone -> Claude -> { answer, citations[] }"
+    }
+  ],
+  "notes": [
+    "recall-process has NO API route — it is triggered by the S3 ObjectCreated event, not HTTP.",
+    "After deploying, set the frontend's VITE_API_BASE_URL to https://{api-id}.execute-api.us-east-1.amazonaws.com/prod and VITE_USE_MOCK=false."
+  ]
+}

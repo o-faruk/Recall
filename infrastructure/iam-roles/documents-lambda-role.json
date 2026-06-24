@@ -1,0 +1,12 @@
+{
+  "_comment": "Least-privilege IAM policy for the Recall DOCUMENTS (read) Lambda. Attach to recall-documents-role alongside AWS-managed AWSLambdaBasicExecutionRole (logs). It can only READ the table (Scan for the list, GetItem for status) — no writes, no S3, nothing else. Replace ACCOUNT_ID and the table name with your values.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadDocumentMetadata",
+      "Effect": "Allow",
+      "Action": ["dynamodb:Scan", "dynamodb:GetItem"],
+      "Resource": "arn:aws:dynamodb:us-east-1:ACCOUNT_ID:table/RecallDocuments"
+    }
+  ]
+}
