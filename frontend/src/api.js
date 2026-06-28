@@ -8,6 +8,8 @@
 // flip from mock to live.
 // ----------------------------------------------------------------------
 
+import { getIdToken } from "./auth.js";
+
 const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? "true") !== "false";
 const BASE = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -90,9 +92,13 @@ const mockApi = {
 // LIVE backend — real endpoints behind API Gateway (wired in Phase 5).
 // ======================================================================
 async function http(method, path, body) {
+  const headers = { "Content-Type": "application/json" };
+  // Attach the Cognito ID token so the API Gateway authorizer lets us in.
+  const token = await getIdToken();
+  if (token) headers.Authorization = token;
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);

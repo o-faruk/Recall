@@ -4,7 +4,7 @@ import UploadPanel from "./components/UploadPanel.jsx";
 import DocumentList from "./components/DocumentList.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 
-export default function App() {
+export default function App({ signOut } = {}) {
   const [documents, setDocuments] = useState([]);
   const [selectedDocId, setSelectedDocId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -89,6 +89,22 @@ export default function App() {
           <a className="gh-link" href="https://github.com/" target="_blank" rel="noreferrer">
             Omar Faruk
           </a>
+          {signOut && (
+            <button
+              onClick={signOut}
+              style={{
+                background: "rgba(255,255,255,.06)",
+                border: "1px solid rgba(255,255,255,.1)",
+                color: "rgba(255,255,255,.7)",
+                fontSize: "12px",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                cursor: "pointer",
+              }}
+            >
+              Sign out
+            </button>
+          )}
         </div>
       </header>
 
